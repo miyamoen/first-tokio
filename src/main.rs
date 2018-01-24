@@ -8,8 +8,12 @@ use std::io;
 use std::str;
 use bytes::BytesMut;
 use tokio_io::codec::{Encoder, Decoder};
+use tokio_proto::pipeline::ServerProto;
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::Framed;
 
 pub struct LineCodec;
+pub struct LineProto;
 
 impl Decoder for LineCodec {
     type Item = String;
@@ -43,6 +47,21 @@ impl Encoder for LineCodec {
         buf.extend(msg.as_bytes());
         buf.extend(b"\n");
         Ok(())
+    }
+}
+
+impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for LineProto {
+    // For this protocol style, `Request` matches the `Item` type of the codec's `Decoder`
+    type Request = String;
+
+    // For this protocol style, `Response` matches the `Item` type of the codec's `Encoder`
+    type Response = String;
+
+    // A bit of boilerplate to hook in the codec:
+    type Transport = Framed<T, LineCodec>;
+    type BindTransport = Result<Self::Transport, io::Error>;
+    fn bind_transport(&self, io: T) -> Self::BindTransport {
+        Ok(io.framed(LineCodec))
     }
 }
 
