@@ -13,10 +13,23 @@ use tokio_proto::pipeline::ServerProto;
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::Framed;
 use tokio_service::Service;
+use tokio_proto::TcpServer;
 
 pub struct LineCodec;
 pub struct LineProto;
 pub struct Echo;
+
+fn main() {
+    // Specify the localhost address
+    let addr = "0.0.0.0:12345".parse().unwrap();
+
+    // The builder requires a protocol and an address
+    let server = TcpServer::new(LineProto, addr);
+
+    // We provide a way to *instantiate* the service for each new
+    // connection; here, we just immediately return a new instance.
+    server.serve(|| Ok(Echo));
+}
 
 impl Decoder for LineCodec {
     type Item = String;
@@ -84,8 +97,4 @@ impl Service for Echo {
         // In this case, the response is immediate.
         Box::new(future::ok(req))
     }
-}
-
-fn main() {
-    println!("Hello, world!");
 }
