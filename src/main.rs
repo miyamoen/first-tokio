@@ -28,7 +28,7 @@ fn main() {
 
     // We provide a way to *instantiate* the service for each new
     // connection; here, we just immediately return a new instance.
-    server.serve(|| Ok(Echo));
+    server.serve(|| Ok(EchoRev));
 }
 
 impl Decoder for LineCodec {
@@ -96,5 +96,23 @@ impl Service for Echo {
     fn call(&self, req: Self::Request) -> Self::Future {
         // In this case, the response is immediate.
         Box::new(future::ok(req))
+    }
+}
+
+// --------------
+
+struct EchoRev;
+
+impl Service for EchoRev {
+    type Request = String;
+    type Response = String;
+    type Error = io::Error;
+    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
+
+    fn call(&self, req: Self::Request) -> Self::Future {
+        let rev: String = req.chars()
+            .rev()
+            .collect();
+        Box::new(future::ok(rev))
     }
 }
